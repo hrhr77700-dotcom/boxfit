@@ -5,6 +5,8 @@ const results = document.querySelector('#results');
 const error = document.querySelector('#input-error');
 const initial = results.innerHTML;
 const customForm = document.querySelector('#custom-box-form');
+const customDialog = document.querySelector('#custom-box-dialog');
+const openCustomButton = document.querySelector('#open-custom-box');
 const customFields = ['box-name', 'box-width', 'box-depth', 'box-height'].map(id => document.getElementById(id));
 const customError = document.querySelector('#custom-error');
 const customList = document.querySelector('#custom-box-list');
@@ -64,6 +66,24 @@ function clearCustomErrors() {
   customError.textContent = '';
   customFields.forEach(field => field.removeAttribute('aria-invalid'));
 }
+function openCustomDialog() {
+  customForm.reset();
+  clearCustomErrors();
+  if (typeof customDialog.showModal === 'function') customDialog.showModal();
+  else customDialog.setAttribute('open', '');
+  customFields[0].focus();
+}
+function closeCustomDialog() {
+  if (typeof customDialog.close === 'function') customDialog.close();
+  else customDialog.removeAttribute('open');
+  openCustomButton.focus({ preventScroll: true });
+}
+openCustomButton.addEventListener('click', openCustomDialog);
+document.querySelector('#cancel-custom-box').addEventListener('click', closeCustomDialog);
+document.querySelector('#close-custom-box').addEventListener('click', closeCustomDialog);
+customDialog.addEventListener('keydown', event => {
+  if (event.key === 'Escape') { event.preventDefault(); closeCustomDialog(); }
+});
 function renderCustomBoxes() {
   document.querySelector('#custom-count').textContent = `${customBoxes.length}개`;
   customList.innerHTML = customBoxes.length ? customBoxes.map(box => `<li><div><span class="source-tag custom-source">내 박스</span><strong>${escapeHTML(box.name)}</strong><span class="custom-size">안쪽 ${size(box.size)} cm</span></div><button type="button" data-remove="${box.id}" aria-label="${escapeHTML(box.name)} 삭제">삭제</button></li>`).join('') : '<li class="custom-empty">아직 추가한 박스가 없어요.</li>';
@@ -112,8 +132,12 @@ customForm.addEventListener('submit', event => {
   saveCustomBoxes();
   renderCustomBoxes();
   customForm.reset();
-  customStatus.textContent = `‘${result.box.name}’ 박스를 추천 후보에 추가했어요.`;
-  if (hasRecommendation) showRecommendations(false);
+  closeCustomDialog();
+  customStatus.textContent = `‘${result.box.name}’ (${size(result.box.size)} cm)를 저장했어요. 내 박스 목록과 추천 후보에 추가했습니다.`;
+  const inputIsValid = !BoxFit.recommend(fields.map(field => field.value), Number(form.elements.padding.value), []).errors.some(Boolean);
+  if (hasRecommendation || inputIsValid) showRecommendations(false);
+  customStatus.focus({ preventScroll: true });
+  customStatus.scrollIntoView({ block: 'nearest' });
 });
 customForm.addEventListener('input', clearCustomErrors);
 customList.addEventListener('click', event => {
@@ -125,6 +149,6 @@ customList.addEventListener('click', event => {
   renderCustomBoxes();
   customStatus.textContent = `‘${removed.name}’ 박스를 삭제했어요.`;
   if (hasRecommendation) showRecommendations(false);
-  customFields[0].focus();
+  openCustomButton.focus({ preventScroll: true });
 });
 loadCustomBoxes();
