@@ -28,11 +28,11 @@
   if(![0,1,2,3,5].includes(padding))return {errors:['포장 여유를 선택해주세요.']};
   const original=raw.map(Number),needed=original.map(v=>v+padding);
   const fits=(a,b)=>a<=b||Math.abs(a-b)<=Number.EPSILON*Math.max(a,b)*4;
-  const matches=boxes.flatMap(box=>{
+  const candidates=boxes.flatMap(box=>{
    const order=orders.find(order=>order.every((axis,i)=>fits(needed[axis],box.size[i])));
    return order?[{...box,order,oriented:order.map(axis=>original[axis]),volume:box.size.reduce((a,b)=>a*b,1)}]:[];
-  }).sort((a,b)=>a.volume-b.volume||a.id.localeCompare(b.id)).slice(0,3);
-  return {errors:[],original,needed,padding,matches};
+  }).sort((a,b)=>a.volume-b.volume||a.id.localeCompare(b.id));
+  return {errors:[],original,needed,padding,candidates,matches:candidates.slice(0,3)};
  }
  root.BoxFit={recommend,createCustomBox,labels};
  if(typeof module!=='undefined')module.exports=root.BoxFit;

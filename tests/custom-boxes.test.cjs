@@ -92,3 +92,14 @@ test('저장 후 지수 표기가 되는 소수·큰 숫자도 복원하고 직�
   assert.ok(r.errors[1]);assert.equal(r.box,undefined);
  }
 });
+
+
+test('상위 3개 밖에 있는 내 박스도 전체 추천 후보에 포함된다',()=>{
+ const box=custom('테스트 박스',['30','25','20']);
+ const r=recommend(['1','1','1'],2,[...examples,box]);
+ assert.equal(r.matches.length,3);
+ assert.ok(!r.matches.some(b=>b.id===box.id));
+ assert.ok(r.candidates.some(b=>b.id===box.id));
+ const exact=recommend(['28','23','18'],2,[...examples,box]);
+ assert.ok(exact.candidates.some(b=>b.id===box.id));
+});

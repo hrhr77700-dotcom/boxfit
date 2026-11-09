@@ -44,9 +44,9 @@ function showRecommendations(focusError = true) {
     results.innerHTML = summary + '<div class="empty no-match"><span aria-hidden="true">↗</span><h3>조금 더 큰 박스가 필요해요</h3><p>예시 박스와 내 박스 중에는 맞는 박스가 없어요.<br>위 크기 이상의 내부 공간을 가진 박스를 찾아주세요.<br>물건을 회전하면 치수 순서는 달라질 수 있어요.</p></div>';
     return;
   }
-  results.innerHTML = summary + `<p class="count">맞는 박스 <strong>${result.matches.length}개</strong>를 골랐어요 <span>내부 가로 × 세로 × 높이</span></p>` + result.matches.map((box, i) => `<article class="box-card ${i === 0 ? 'best' : ''}">
+  results.innerHTML = summary + `<p class="count">맞는 박스 <strong>${result.candidates.length}개</strong> 중 ${result.matches.length}개를 골랐어요 <span>내부 가로 × 세로 × 높이</span></p>` + result.matches.map((box, i) => `<article class="box-card ${i === 0 ? 'best' : ''}">
     <div class="card-top"><div><span class="rank">${String(i + 1).padStart(2, '0')}</span><h3>${escapeHTML(box.name)}</h3></div>${i === 0 ? '<span class="badge">가장 작은 박스</span>' : ''}</div>
-    <span class="source-tag ${box.source === 'custom' ? 'custom-source' : ''}">${box.source === 'custom' ? '내 박스' : '예시 박스'}</span>
+    <span class="source-tag ${box.source === 'custom' ? 'custom-source' : ''}">${box.source === 'custom' ? '내 박스' : '예시 규격'}</span>
     <div class="box-size">${size(box.size)} <small>cm</small></div><p class="volume">내부 부피 <strong>${number(box.volume)} cm³</strong></p>
     <div class="orientation"><span aria-hidden="true">↻</span><p>넣는 방향 <strong>${size(box.oriented)} cm</strong><br><span>박스 가로 ← 물건 ${BoxFit.labels[box.order[0]]} · 세로 ← ${BoxFit.labels[box.order[1]]} · 높이 ← ${BoxFit.labels[box.order[2]]}</span></p></div>
   </article>`).join('') + '<p class="result-note">넣는 방향은 물건 원래 크기 기준이며, 포장 여유도 함께 확인했어요.</p>';
@@ -95,7 +95,7 @@ function saveCustomBoxes() {
     if (localStorage.getItem(storageKey) !== serialized) throw new Error('Storage did not retain boxes');
     storageNote.textContent = '내 박스는 이 브라우저에 저장돼요. 파일 위치나 브라우저가 바뀌면 목록이 달라질 수 있어요.';
   } catch {
-    storageNote.textContent = '이 브라우저에서는 저장할 수 없어 내 박스가 현재 창에서만 유지돼요. 파일을 닫거나 새로고침하면 사라질 수 있어요.';
+    storageNote.textContent = '브라우저 저장을 사용할 수 없어 현재 창에서만 유지됩니다. 파일을 닫거나 새로고침하면 사라질 수 있어요.';
   }
 }
 function loadCustomBoxes() {
@@ -113,7 +113,7 @@ function loadCustomBoxes() {
     }
   } catch {
     customBoxes = [];
-    storageNote.textContent = '저장된 내 박스를 불러오지 못했어요. 새로 추가한 박스는 지금 바로 사용할 수 있어요.';
+    storageNote.textContent = '저장된 내 박스를 불러오지 못했습니다. 새로 추가한 박스는 현재 창에서만 유지됩니다.';
   }
   renderCustomBoxes();
 }
