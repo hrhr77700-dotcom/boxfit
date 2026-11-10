@@ -27,9 +27,21 @@ function clearErrors() {
   fields.forEach(field => field.removeAttribute('aria-invalid'));
 }
 
+function renderBoxCard(box, i) {
+  return `<article class="box-card ${i === 0 ? 'best' : ''}">
+    <div class="card-top"><div><span class="rank">${String(i + 1).padStart(2, '0')}</span><h3>${escapeHTML(box.name)}</h3></div>${i === 0 ? '<span class="badge">가장 작은 박스</span>' : ''}</div>
+    <span class="source-tag ${box.source === 'custom' ? 'custom-source' : ''}">${box.source === 'product' ? '판매 상품' : box.source === 'custom' ? '내 박스' : '예시 규격'}</span>
+    <div class="box-size">${size(box.size)} <small>cm</small></div><p class="volume">내부 부피 <strong>${number(box.volume)} cm³</strong></p>
+    <div class="orientation"><span aria-hidden="true">↻</span><p>넣는 방향 <strong>${size(box.oriented)} cm</strong><br><span>박스 가로 ← 물건 ${BoxFit.labels[box.order[0]]} · 세로 ← ${BoxFit.labels[box.order[1]]} · 높이 ← ${BoxFit.labels[box.order[2]]}</span></p></div>
+    ${box.source === 'product' ? `<p class="volume">판매 단위 <strong>${box.quantity}장</strong> · <a href="https://smartstore.naver.com/boxga/products/${box.productId}" target="_blank" rel="noopener noreferrer">박스가 상품 보기</a></p>` : ''}
+  </article>`;
+}
+
 function showRecommendations(focusError = true) {
   clearErrors();
-  const result = BoxFit.recommend(fields.map(field => field.value), Number(form.elements.padding.value), [...BOXFIT_BOXES, ...customBoxes]);
+  const dimensions = fields.map(field => field.value);
+  const padding = Number(form.elements.padding.value);
+  const result = BoxFit.recommend(dimensions, padding, [...BOXFIT_BOXES, ...customBoxes]);
   if (result.errors.some(Boolean)) {
     error.textContent = result.errors.filter(Boolean).join(' ');
     error.hidden = false;
@@ -40,16 +52,19 @@ function showRecommendations(focusError = true) {
   }
   hasRecommendation = true;
   const summary = `<div class="needed"><span>여유를 포함한 필요 내부 크기</span><strong>${size(result.needed)} <small>cm</small></strong><span>입력한 가로 × 세로 × 높이 순서 · 여유 ${result.padding} cm</span></div>`;
+  const products = BoxFit.recommend(dimensions, padding, BOXFIT_PRODUCTS).matches;
+  const productSection = products.length
+    ? '<h3 class="count">구매할 수 있는 박스</h3>' + products.map(renderBoxCard).join('')
+    : '';
   if (!result.matches.length) {
-    results.innerHTML = summary + '<div class="empty no-match"><span aria-hidden="true">↗</span><h3>조금 더 큰 박스가 필요해요</h3><p>예시 박스와 내 박스 중에는 맞는 박스가 없어요.<br>위 크기 이상의 내부 공간을 가진 박스를 찾아주세요.<br>물건을 회전하면 치수 순서는 달라질 수 있어요.</p></div>';
+    if (productSection) {
+      results.innerHTML = summary + productSection;
+      return;
+    }
+    results.innerHTML = summary + '<div class="empty no-match"><span aria-hidden="true">↗</span><h3>조금 더 큰 박스가 필요해요</h3><p>등록된 박스 중에는 맞는 박스가 없어요.<br>위 크기 이상의 내부 공간을 가진 박스를 찾아주세요.<br>물건을 회전하면 치수 순서는 달라질 수 있어요.</p></div>';
     return;
   }
-  results.innerHTML = summary + `<p class="count">맞는 박스 <strong>${result.candidates.length}개</strong> 중 ${result.matches.length}개를 골랐어요 <span>내부 가로 × 세로 × 높이</span></p>` + result.matches.map((box, i) => `<article class="box-card ${i === 0 ? 'best' : ''}">
-    <div class="card-top"><div><span class="rank">${String(i + 1).padStart(2, '0')}</span><h3>${escapeHTML(box.name)}</h3></div>${i === 0 ? '<span class="badge">가장 작은 박스</span>' : ''}</div>
-    <span class="source-tag ${box.source === 'custom' ? 'custom-source' : ''}">${box.source === 'custom' ? '내 박스' : '예시 규격'}</span>
-    <div class="box-size">${size(box.size)} <small>cm</small></div><p class="volume">내부 부피 <strong>${number(box.volume)} cm³</strong></p>
-    <div class="orientation"><span aria-hidden="true">↻</span><p>넣는 방향 <strong>${size(box.oriented)} cm</strong><br><span>박스 가로 ← 물건 ${BoxFit.labels[box.order[0]]} · 세로 ← ${BoxFit.labels[box.order[1]]} · 높이 ← ${BoxFit.labels[box.order[2]]}</span></p></div>
-  </article>`).join('') + '<p class="result-note">넣는 방향은 물건 원래 크기 기준이며, 포장 여유도 함께 확인했어요.</p>';
+  results.innerHTML = summary + `<p class="count">맞는 박스 <strong>${result.candidates.length}개</strong> 중 ${result.matches.length}개를 골랐어요 <span>내부 가로 × 세로 × 높이</span></p>` + result.matches.map(renderBoxCard).join('') + productSection + '<p class="result-note">넣는 방향은 물건 원래 크기 기준이며, 포장 여유도 함께 확인했어요.</p>';
 }
 
 form.addEventListener('submit', event => { event.preventDefault(); showRecommendations(); });
