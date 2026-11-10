@@ -180,7 +180,12 @@ function showRecommendations(focusError = true) {
     return;
   }
   hasRecommendation = true;
-  const summary = `<div class="needed"><span>여유를 포함한 필요 내부 크기</span><strong>${size(result.needed)} <small>cm</small></strong><span>입력한 가로 × 세로 × 높이 순서 · 여유 ${result.padding} cm</span></div>`;
+  const copyText = `박스 내부 크기 (가로 × 세로 × 높이): ${size(result.needed)} cm`;
+  const summary = `<div class="needed"><span>여유를 포함한 필요 내부 크기</span><strong>${size(result.needed)} <small>cm</small></strong><span>입력한 가로 × 세로 × 높이 순서 · 여유 ${result.padding} cm</span>
+    <button id="copy-needed-size" class="secondary" type="button">필요한 박스 크기 복사</button>
+    <input id="needed-size-text" type="text" value="${escapeHTML(copyText)}" aria-label="복사할 박스 내부 크기" readonly hidden>
+    <span id="copy-needed-status" role="status" hidden></span>
+  </div>`;
   const products = BoxFit.recommend(dimensions, padding, BOXFIT_PRODUCTS).matches;
   const productSection = products.length
     ? '<h3 class="count">구매할 수 있는 박스</h3>' + products.map(renderBoxCard).join('')
@@ -195,6 +200,24 @@ function showRecommendations(focusError = true) {
   }
   results.innerHTML = summary + `<p class="count">맞는 박스 <strong>${result.candidates.length}개</strong> 중 ${result.matches.length}개를 골랐어요 <span>내부 가로 × 세로 × 높이</span></p>` + result.matches.map(renderBoxCard).join('') + productSection + '<p class="result-note">넣는 방향은 물건 원래 크기 기준이며, 포장 여유도 함께 확인했어요.</p>';
 }
+
+results.addEventListener('click', async event => {
+  const button = event.target.closest('#copy-needed-size');
+  if (!button) return;
+
+  const field = results.querySelector('#needed-size-text');
+  const status = results.querySelector('#copy-needed-status');
+  status.hidden = false;
+  try {
+    await navigator.clipboard.writeText(field.value);
+    status.textContent = '필요한 박스 크기를 복사했어요.';
+  } catch {
+    field.hidden = false;
+    field.focus();
+    field.select();
+    status.textContent = '선택된 내용을 복사해주세요. PC에서는 Ctrl+C를 누르면 돼요.';
+  }
+});
 
 form.addEventListener('submit', event => { event.preventDefault(); showRecommendations(); });
 document.querySelector('#example').addEventListener('click', () => {
