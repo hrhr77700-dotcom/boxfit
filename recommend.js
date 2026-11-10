@@ -30,10 +30,14 @@
   const fits=(a,b)=>a<=b||Math.abs(a-b)<=Number.EPSILON*Math.max(a,b)*4;
   const candidates=boxes.flatMap(box=>{
    const order=orders.find(order=>order.every((axis,i)=>fits(needed[axis],box.size[i])));
-   return order?[{...box,order,oriented:order.map(axis=>original[axis]),volume:box.size.reduce((a,b)=>a*b,1)}]:[];
+   if(!order)return [];
+   const oriented=order.map(axis=>original[axis]);
+   const remaining=box.size.map((length,i)=>Math.max(0,length-oriented[i]));
+   return [{...box,order,oriented,remaining,padding,volume:box.size.reduce((a,b)=>a*b,1)}];
   }).sort((a,b)=>a.volume-b.volume||a.id.localeCompare(b.id));
   return {errors:[],original,needed,padding,candidates,matches:candidates.slice(0,3)};
  }
  root.BoxFit={recommend,createCustomBox,labels};
  if(typeof module!=='undefined')module.exports=root.BoxFit;
 })(globalThis);
+

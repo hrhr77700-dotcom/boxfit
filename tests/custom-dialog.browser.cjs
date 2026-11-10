@@ -68,7 +68,7 @@ fs.writeFileSync(file, html);
     assert.match(await card.innerText(), /15,000 cm³/);
     assert.match(await card.locator('.orientation').innerText(), /28 × 23 × 18/);
     assert.match(await card.locator('.orientation').innerText(), /가로 ← 물건 세로 · 세로 ← 높이 · 높이 ← 가로/);
-    assert.equal(await page.locator('.box-card').count(), 3);
+    assert.equal(await page.getByRole('region', { name: '맞는 예시 박스와 내 박스', exact: true }).locator('.box-card').count(), 3);
     await page.screenshot({ path: path.join(isolated, 'saved-desktop.png'), fullPage: true });
     await page.locator('input[name=padding][value="3"]').check();
     await page.click('#box-form button[type=submit]');
@@ -137,3 +137,4 @@ fs.writeFileSync(file, html);
     console.log('PASS intercepted test origin: persistence and blocked-storage fallback.');
   } finally { await browser.close(); }
 })().catch(err => { console.error(err); process.exitCode = 1; });
+

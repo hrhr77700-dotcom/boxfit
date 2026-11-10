@@ -6,3 +6,94 @@
 
 /* Reading order: item inputs, recommendations, then the custom box list. */
 .custom-panel{grid-column:1 / -1}.secondary{background:#c65520;color:#fff;border-color:#c65520}.secondary:hover{background:#ad4819}.name-field input{font-size:16px;min-height:44px}
+
+.result-filter {
+  margin: 0 0 18px;
+}
+.result-filter legend {
+  font-size: 12px;
+  margin-bottom: 9px;
+}
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.filter-options label {
+  position: relative;
+  cursor: pointer;
+  flex: 1;
+  min-width: 100px;
+}
+.filter-options input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+.filter-options span {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 13px 8px;
+  text-align: center;
+  font-size: 12px;
+  background: #fff;
+}
+.filter-options input:checked + span {
+  background: #fff0e4;
+  border-color: var(--orange);
+  color: #a94718;
+  font-weight: 700;
+}
+.filter-options input:focus-visible + span {
+  outline: 3px solid #ad4c1d;
+  outline-offset: 3px;
+}
+.remaining-space {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7f4ed;
+}
+.remaining-space p {
+  margin: 0 0 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.remaining-space dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.remaining-space dt {
+  color: #75654f;
+  font-size: 10px;
+}
+.remaining-space dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.remaining-space dd span,
+.remaining-space small {
+  font-size: 10px;
+  color: #75654f;
+}
+.remaining-space small {
+  display: block;
+  margin-top: 9px;
+  line-height: 1.7;
+}
+.count > span {
+  display: block;
+  float: none;
+  margin-top: 5px;
+}
+.needed input {
+  min-width: 0;
+  width: 100%;
+}
+

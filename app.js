@@ -4,6 +4,13 @@ const fields = ['width', 'depth', 'height'].map(id => document.getElementById(id
 const results = document.querySelector('#results');
 const error = document.querySelector('#input-error');
 const initial = results.innerHTML;
+const resultFilters = document.querySelector('#result-filters');
+const scopeAll = document.querySelector('#scope-all');
+const scopeCustom = document.querySelector('#scope-custom');
+const quantityAll = document.querySelector('#quantity-all');
+const quantitySingle = document.querySelector('#quantity-single');
+const quantityFilter = document.querySelector('#quantity-filter');
+const resultDescription = document.querySelector('#result-description');
 const customForm = document.querySelector('#custom-box-form');
 const customDialog = document.querySelector('#custom-box-dialog');
 const openCustomButton = document.querySelector('#open-custom-box');
@@ -33,6 +40,11 @@ function renderBoxCard(box, i) {
     <span class="source-tag ${box.source === 'custom' ? 'custom-source' : ''}">${box.source === 'product' ? '판매 상품' : box.source === 'custom' ? '내 박스' : '예시 규격'}</span>
     <div class="box-size">${size(box.size)} <small>cm</small></div><p class="volume">내부 부피 <strong>${number(box.volume)} cm³</strong></p>
     <div class="orientation"><span aria-hidden="true">↻</span><p>넣는 방향 <strong>${size(box.oriented)} cm</strong><br><span>박스 가로 ← 물건 ${BoxFit.labels[box.order[0]]} · 세로 ← ${BoxFit.labels[box.order[1]]} · 높이 ← ${BoxFit.labels[box.order[2]]}</span></p></div>
+    <div class="remaining-space">
+      <p>물건을 넣고 남는 공간</p>
+      <dl>${box.remaining.map((gap, axis) => `<div><dt>${BoxFit.labels[axis]}</dt><dd>${number(gap)} <span>cm</span></dd></div>`).join('')}</dl>
+      <small>박스 각 방향의 양쪽 합계 · 선택한 포장 여유 ${number(box.padding)} cm씩 포함</small>
+    </div>
     ${box.source === 'product' ? `<p class="volume">판매 단위 <strong>${box.quantity}장</strong> · <a href="https://smartstore.naver.com/boxga/products/${box.productId}" target="_blank" rel="noopener noreferrer">박스가 상품 보기</a></p>` : ''}
   </article>`;
 }
@@ -41,7 +53,9 @@ function showRecommendations(focusError = true) {
   clearErrors();
   const dimensions = fields.map(field => field.value);
   const padding = Number(form.elements.padding.value);
-  const result = BoxFit.recommend(dimensions, padding, [...BOXFIT_BOXES, ...customBoxes]);
+  const onlyCustom = scopeCustom.checked;
+  const boxes = onlyCustom ? customBoxes : [...BOXFIT_BOXES, ...customBoxes];
+  const result = BoxFit.recommend(dimensions, padding, boxes);
   if (result.errors.some(Boolean)) {
     error.textContent = result.errors.filter(Boolean).join(' ');
     error.hidden = false;
@@ -57,22 +71,63 @@ function showRecommendations(focusError = true) {
     <input id="needed-size-text" type="text" value="${escapeHTML(copyText)}" aria-label="복사할 박스 내부 크기" readonly hidden>
     <span id="copy-needed-status" role="status" hidden></span>
   </div>`;
-  const products = BoxFit.recommend(dimensions, padding, BOXFIT_PRODUCTS).matches;
-  const productSection = products.length
-    ? '<h3 class="count">구매할 수 있는 박스</h3>' + products.map(renderBoxCard).join('')
-    : '';
-  if (!result.matches.length) {
-    if (productSection) {
-      results.innerHTML = summary + productSection;
-      return;
-    }
-    results.innerHTML = summary + '<div class="empty no-match"><span aria-hidden="true">↗</span><h3>조금 더 큰 박스가 필요해요</h3><p>등록된 박스 중에는 맞는 박스가 없어요.<br>위 크기 이상의 내부 공간을 가진 박스를 찾아주세요.<br>물건을 회전하면 치수 순서는 달라질 수 있어요.</p></div>';
-    return;
+  let boxSection;
+  if (result.matches.length) {
+    const title = onlyCustom ? '맞는 내 박스' : '맞는 예시 박스와 내 박스';
+    boxSection = `<section aria-label="${title}"><p class="count">${title} <strong>${result.candidates.length}개</strong> 중 ${result.matches.length}개를 골랐어요 <span>내부 가로 × 세로 × 높이</span></p>` + result.matches.map(renderBoxCard).join('') + '</section>';
+  } else if (onlyCustom && !customBoxes.length) {
+    boxSection = '<div class="empty no-match"><h3>저장한 내 박스가 없어요</h3><p>가지고 있는 박스의 안쪽 크기를 추가하면<br>물건이 들어가는지 확인할 수 있어요.</p><button class="secondary" type="button" data-action="add-custom">내 박스 추가하기</button></div>';
+  } else {
+    const title = onlyCustom ? '내 박스 중에는 맞는 박스가 없어요' : '예시 박스와 내 박스 중에는 맞는 박스가 없어요';
+    boxSection = `<div class="empty no-match"><h3>${title}</h3><p>위 필요 내부 크기 이상의 박스를 찾아주세요.<br>물건을 회전하면 치수 순서는 달라질 수 있어요.</p>${onlyCustom ? '<button class="secondary" type="button" data-action="show-all-boxes">전체 박스 보기</button>' : ''}</div>`;
   }
-  results.innerHTML = summary + `<p class="count">맞는 박스 <strong>${result.candidates.length}개</strong> 중 ${result.matches.length}개를 골랐어요 <span>내부 가로 × 세로 × 높이</span></p>` + result.matches.map(renderBoxCard).join('') + productSection + '<p class="result-note">넣는 방향은 물건 원래 크기 기준이며, 포장 여유도 함께 확인했어요.</p>';
+
+  let productSection = '';
+  if (!onlyCustom) {
+    const products = quantitySingle.checked ? BOXFIT_PRODUCTS.filter(box => box.quantity === 1) : BOXFIT_PRODUCTS;
+    const matches = BoxFit.recommend(dimensions, padding, products).matches;
+    const heading = quantitySingle.checked ? '1장 구매할 수 있는 박스' : '구매할 수 있는 박스';
+    productSection = `<section aria-label="판매 상품 추천"><h3 class="count">${heading}</h3>`;
+    if (matches.length) {
+      productSection += matches.map(renderBoxCard).join('');
+    } else {
+      const title = quantitySingle.checked ? '맞는 1장 상품이 없어요' : '등록된 판매 상품 중에는 맞는 박스가 없어요';
+      const bundlesFit = quantitySingle.checked && BoxFit.recommend(dimensions, padding, BOXFIT_PRODUCTS).matches.length > 0;
+      productSection += `<div class="empty"><h3>${title}</h3><p>필요한 박스 크기를 복사해서 다른 상품을 찾아볼 수 있어요.</p>${bundlesFit ? '<button class="secondary" type="button" data-action="show-bundles">묶음 상품 보기</button>' : ''}</div>`;
+    }
+    productSection += '</section>';
+  }
+  results.innerHTML = summary + boxSection + productSection + '<p class="result-note">넣는 방향은 물건 원래 크기 기준이며, 포장 여유도 함께 확인했어요.</p>';
 }
 
+function updateFilters() {
+  quantityFilter.hidden = scopeCustom.checked;
+  quantityFilter.disabled = scopeCustom.checked;
+  resultDescription.textContent = scopeCustom.checked
+    ? '저장한 내 박스 중 물건이 들어가는 박스를 작은 순서로 최대 3개 추천해요.'
+    : '예시 박스와 내 박스 중 작은 순서로 최대 3개를 추천하고, 맞는 판매 상품은 따로 보여드려요.';
+  if (hasRecommendation) showRecommendations(false);
+}
+resultFilters.addEventListener('change', updateFilters);
+
 results.addEventListener('click', async event => {
+  const action = event.target.closest('button[data-action]')?.dataset.action;
+  if (action === 'add-custom') {
+    openCustomDialog();
+    return;
+  }
+  if (action === 'show-all-boxes') {
+    scopeAll.checked = true;
+    updateFilters();
+    scopeAll.focus();
+    return;
+  }
+  if (action === 'show-bundles') {
+    quantityAll.checked = true;
+    updateFilters();
+    quantityAll.focus();
+    return;
+  }
   const button = event.target.closest('#copy-needed-size');
   if (!button) return;
 
@@ -96,7 +151,14 @@ document.querySelector('#example').addEventListener('click', () => {
   form.elements.padding.value = '2';
   showRecommendations();
 });
-form.addEventListener('reset', () => { clearErrors(); results.innerHTML = initial; hasRecommendation = false; });
+form.addEventListener('reset', () => {
+  clearErrors();
+  results.innerHTML = initial;
+  hasRecommendation = false;
+  scopeAll.checked = true;
+  quantityAll.checked = true;
+  updateFilters();
+});
 form.addEventListener('input', clearErrors);
 
 function clearCustomErrors() {
@@ -192,3 +254,4 @@ customList.addEventListener('click', event => {
   openCustomButton.focus({ preventScroll: true });
 });
 loadCustomBoxes();
+
